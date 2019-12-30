@@ -1,0 +1,4 @@
+enum CourseType{
+ ALevel,
+ OLevel 
+ }
