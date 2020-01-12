@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:past_papers/constants/constants.dart';
 
-class ToggleButton extends StatelessWidget {
-  ToggleButton(
+class CourseButton extends StatelessWidget {
+  CourseButton(
       {this.onPressed,
       this.isSelected = false,
       this.text,
