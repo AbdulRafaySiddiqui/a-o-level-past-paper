@@ -7,7 +7,8 @@ import 'package:past_papers/ui/widgets/CourseButton.dart';
 class CourseView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BaseView<CourseViewModel>(
+    return BaseView<CourseViewModel>.withConsumer(
+      viewModel: CourseViewModel(),
       builder: (BuildContext context, CourseViewModel model, Widget child) =>
       SafeArea(
       child: Scaffold(

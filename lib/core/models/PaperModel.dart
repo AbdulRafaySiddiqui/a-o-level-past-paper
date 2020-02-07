@@ -1,121 +1,85 @@
-import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:past_papers/core/Base/BaseViewModel.dart';
-import 'package:past_papers/core/enums/PaperNumberType.dart';
-import 'package:past_papers/core/enums/PaperType.dart';
-import 'package:past_papers/core/enums/PaperVariantType.dart';
-import 'package:past_papers/core/enums/SeasonType.dart';
+import 'package:flutter/widgets.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'package:past_papers/core/services/Helper.dart';
 
-class Paper extends BaseViewModel{
+part 'PaperModel.g.dart';
+
+@JsonSerializable()
+class Paper {
   Paper(
       {@required this.paperType,
       @required this.paperVariantType,
       @required this.paperNumberType,
       @required this.year,
       @required this.seasonType,
-      @required this.subject}) {
-    //set title, subtitle & seasonicon
-    setPaperTitle();
-    setsubtitle();
-    setSeasonIcon();
+      @required this.subjectId,
+      @required this.paperId,
+      this.filePath,
+      this.downloadUrl,
+      this.update = false}) {
+    title = Helper.getPaperTitle(paperType);
+    subtitle = Helper.getsubtitle(paperNumberType, paperVariantType);
+    seasonIcon = Helper.getSeasonIcon(seasonType);
+
+    seasonName =
+        seasonType == 1 ? 'Summer' : seasonType == 2 ? 'March' : 'Winter';
   }
 
-  String subject;
+  factory Paper.fromJson(Map<String, dynamic> json) {
+    var paper = _$PaperFromJson(json);
+    paper.title = Helper.getPaperTitle(paper.paperType);
+    paper.subtitle =
+        Helper.getsubtitle(paper.paperNumberType, paper.paperVariantType);
+    paper.seasonIcon = Helper.getSeasonIcon(paper.seasonType);
+
+    paper.seasonName = paper.seasonType == 1
+        ? 'Summer'
+        : paper.seasonType == 2 ? 'March' : 'Winter';
+
+    return paper;
+  }
+
+  Map<String, dynamic> toJson() => _$PaperToJson(this);
+
+  String subjectId;
+
+  String paperId;
+
   int year;
-  PaperType paperType;
-  PaperNumberType paperNumberType;
-  PaperVariantType paperVariantType;
-  SeasonType seasonType;
+
+  int paperType;
+
+  int paperNumberType;
+
+  int paperVariantType;
+
+  int seasonType;
+
+  bool update;
+
+  @JsonKey(ignore: true)
+  //to searh easily with name
+  String seasonName;
+
+  String downloadUrl;
+
+  String filePath;
+
+  @JsonKey(ignore: true)
   bool isVisible = true;
+
+  @JsonKey(ignore: true)
   bool isFilterVisible = true;
+
+  @JsonKey(ignore: true)
   bool isSelected = false;
 
+  @JsonKey(ignore: true)
   String title;
+
+  @JsonKey(ignore: true)
   String subtitle;
-  String season;
+
+  @JsonKey(ignore: true)
   IconData seasonIcon;
-
-  setPaperTitle() {
-    switch (paperType) {
-      case PaperType.QuestionPaper:
-        title = 'Question Paper';
-        break;
-      case PaperType.All:
-        title = 'All';
-        break;
-      case PaperType.MarkingScheme:
-        title = 'Marking Scheme';
-        break;
-      case PaperType.ExaminorReport:
-        title = 'Examinor Report';
-        break;
-      case PaperType.GradeThreshold:
-        title = 'Grade Threshold';
-        break;
-    }
-  }
-
-  setsubtitle() {
-    String _paperNumber;
-    String _paperVariant;
-
-    switch (paperNumberType) {
-      case PaperNumberType.All:
-        _paperNumber = 'All Papers';
-        break;
-      case PaperNumberType.One:
-        _paperNumber = 'Paper 1';
-        break;
-      case PaperNumberType.Two:
-        _paperNumber = 'Paper 2';
-        break;
-      case PaperNumberType.Three:
-        _paperNumber = 'Paper 3';
-        break;
-      case PaperNumberType.Four:
-        _paperNumber = 'Paper 4';
-        break;
-    }
-
-    switch (paperVariantType) {
-      case PaperVariantType.All:
-        _paperVariant = 'All Variants';
-        break;
-      case PaperVariantType.One:
-        _paperVariant = 'Variant 1';
-        break;
-      case PaperVariantType.Two:
-        _paperVariant = 'Variant 2';
-        break;
-      case PaperVariantType.Three:
-        _paperVariant = 'Variant 3';
-        break;
-      case PaperVariantType.Four:
-        _paperVariant = 'Variant 4';
-        break;
-    }
-
-    subtitle = '$_paperNumber $_paperVariant';
-  }
-
-  setSeasonIcon() {
-    switch (seasonType) {
-      case SeasonType.All:
-        seasonIcon = IconData(0xe90b, fontFamily: 'icomoon');
-        season = 'All';
-        break;
-      case SeasonType.Summer:
-        seasonIcon = FontAwesomeIcons.solidSun;
-        season = 'Summer';
-        break;
-      case SeasonType.Winter:
-        seasonIcon = IconData(0xe90a, fontFamily: 'icomoon');
-        season = 'Winter';
-        break;
-      case SeasonType.March:
-        seasonIcon = FontAwesomeIcons.cloudSun;
-        season = 'March';
-        break;
-    }
-  }
 }

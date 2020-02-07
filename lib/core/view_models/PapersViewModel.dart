@@ -1,53 +1,79 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:past_papers/core/Base/BaseViewModel.dart';
 import 'package:past_papers/core/Base/locator.dart';
-import 'package:past_papers/core/enums/PaperNumberType.dart';
-import 'package:past_papers/core/enums/PaperType.dart';
-import 'package:past_papers/core/enums/PaperVariantType.dart';
-import 'package:past_papers/core/enums/SeasonType.dart';
 import 'package:past_papers/core/models/PaperModel.dart';
 import 'package:past_papers/core/models/SubjectModel.dart';
-import 'package:past_papers/core/services/API.dart';
-import 'package:past_papers/core/view_models/CourseViewModel.dart';
+import 'package:past_papers/core/services/Api.dart';
+import 'package:past_papers/core/services/Helper.dart';
 
 class PapersViewModel extends BaseViewModel {
-  var api = locator<API>();
+  PapersViewModel(this.subject) {
+    paperTypeIcon = getPaperTypeIcon(0);
+    paperNumberTypeIcon = getPaperNumberIcon(0);
+    seasonIcon = getSeasonIcon(0);
+    years = api.getYears();
 
+    //to find max value
+    endYear = years.reduce((curr, next) => curr > next ? curr : next);
+    //to find min value
+    startYear = years.reduce((curr, next) => curr < next ? curr : next);
+
+    seasons = List.generate(4, (index) => false);
+    paperTypes = List.generate(5, (index) => false);
+    paperNumberTypes = List.generate(5, (index) => false);
+
+    seasons[0] = true;
+    paperTypes[0] = true;
+    paperNumberTypes[0] = true;
+
+    loadPapers();
+  }
+
+  var api = locator<Api>();
+  Subject subject;
   List<Paper> _papers;
-  PaperType paperType = PaperType.All;
-  PaperNumberType paperNumberType = PaperNumberType.All;
-  PaperVariantType paperVariantType = PaperVariantType.All;
-  SeasonType seasonType = SeasonType.All;
   int startYear;
-  int endYear;
+  int endYear = 2019;
+  List<int> years;
   bool multiplePaperSelection = false;
   Paper selectedPaper;
   bool isSearching = false;
+  bool isDeleting = false;
 
   IconData paperTypeIcon;
   IconData paperNumberTypeIcon;
   IconData seasonIcon;
 
-  List<Paper> get papers =>
-      _papers.where((paper) => paper.isFilterVisible && paper.isVisible);
+  List<bool> seasons;
+  List<bool> paperTypes;
+  List<bool> paperNumberTypes;
+
+  List<Paper> get papers => _papers
+      .where((paper) => paper.isFilterVisible && paper.isVisible)
+      .toList();
 
   List<int> getYears() => api.getYears();
 
-  search(String searchText) {
-    //to reset the search
-    if (searchText.isEmpty) {
-      cancleSearch();
-      return;
-    }
+  loadPapers() {
+    _papers = api.getPapers(subject.subjectId);
+    filter();
+    notifyListeners();
+  }
 
-    //to search the paper list
+  startSearch() {
+    isSearching = true;
+    notifyListeners();
+  }
+
+  search(String searchText) {
     isSearching = true;
     searchText = searchText.toLowerCase();
     _papers.forEach((paper) => paper.isVisible =
         paper.title.toLowerCase().contains(searchText) ||
             paper.subtitle.toLowerCase().contains(searchText) ||
-            paper.season.toLowerCase().contains(searchText));
+            paper.seasonName.toLowerCase().contains(searchText));
     notifyListeners();
   }
 
@@ -57,21 +83,20 @@ class PapersViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  filter(var item) {
-    if (item is PaperType) {
-      paperType = item;
-    } else if (item is PaperNumberType) {
-      paperNumberType = item;
-    } else if (item is SeasonType) {
-      seasonType = item;
-    }
+  filter() {
+    int paperType = paperTypes.indexWhere((item) => item == true);
+    int paperNumberType = paperNumberTypes.indexWhere((item) => item == true);
+    int seasonType = seasons.indexWhere((item) => item == true);
 
     _papers.forEach((paper) => paper.isFilterVisible =
         (paper.year >= startYear && paper.year <= endYear) &&
-            (paperType == PaperType.All || paper.paperType == paperType) &&
-            (paperNumberType == PaperNumberType.All ||
+            (paperType == 0 || paper.paperType == paperType) &&
+            (paperNumberType == 0 ||
                 paper.paperNumberType == paperNumberType) &&
-            (seasonType == SeasonType.All || paper.seasonType == seasonType));
+            (seasonType == 0 || paper.seasonType == seasonType));
+    paperTypeIcon = getPaperTypeIcon(paperType);
+    paperNumberTypeIcon = getPaperNumberIcon(paperNumberType);
+    seasonIcon = getSeasonIcon(seasonType);
     notifyListeners();
   }
 
@@ -80,6 +105,16 @@ class PapersViewModel extends BaseViewModel {
   }
 
   selectPaper(Paper paper) {
+    //if tile is already selected then deselect it
+    if (paper.isSelected) {
+      paper.isSelected = false;
+      multiplePaperSelection = false;
+      selectedPaper = null;
+      notifyListeners();
+      return;
+    }
+    if (selectedPaper != null) return;
+
     paper.isSelected = true;
     multiplePaperSelection = true;
     selectedPaper = paper;
@@ -93,78 +128,60 @@ class PapersViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  addPaper(Paper paper) {
-    api.addPaper(paper);
-    _papers = api.getPapers(Course.ALevel, Subject('Accounting'));
+  selectSeason(int value) {
+    for (var i = 0; i < seasons.length; i++) {
+      seasons[i] = value == i;
+    }
+    filter();
+  }
+
+  selectPaperType(int value) {
+    for (var i = 0; i < paperTypes.length; i++) {
+      paperTypes[i] = value == i;
+    }
+    filter();
+  }
+
+  selectPaperNumber(int value) {
+    for (var i = 0; i < paperNumberTypes.length; i++) {
+      paperNumberTypes[i] = value == i;
+    }
+    filter();
+  }
+
+  deletePaper(Paper paper) async {
+    isDeleting = true;
     notifyListeners();
+    await api.deletePaper(paper);
+    isDeleting = false;
+    notifyListeners();
+    closeDialog();
+    loadPapers();
+  }
+
+  closeDialog() {
+    navigation.goBack();
   }
 
   navigate(Paper paper) {
+    //if tile is already selected then deselect it
+    if (paper.isSelected) {
+      paper.isSelected = false;
+      multiplePaperSelection = false;
+      selectedPaper = null;
+      notifyListeners();
+      return;
+    }
     navigation.navigateTo('paperViewer',
         arguments: multiplePaperSelection ? [selectedPaper, paper] : [paper]);
+    selectedPaper?.isSelected = false;
+    selectedPaper = null;
+    multiplePaperSelection = false;
   }
 
-  IconData getPaperTypeIcon(PaperType paperType) {
-    IconData icon;
-    switch (paperType) {
-      case PaperType.All:
-        icon = IconData(0xe900, fontFamily: 'icomoon');
-        break;
-      case PaperType.QuestionPaper:
-        icon = IconData(0xe907, fontFamily: 'icomoon');
-        break;
-      case PaperType.MarkingScheme:
-        icon = IconData(0xe905, fontFamily: 'icomoon');
-        break;
-      case PaperType.ExaminorReport:
-        icon = IconData(0xe902, fontFamily: 'icomoon');
-        break;
-      case PaperType.GradeThreshold:
-        icon = IconData(0xe904, fontFamily: 'icomoon');
-        break;
-    }
+  IconData getPaperTypeIcon(int value) => Helper.getPaperTypeIcon(value);
 
-    return icon;
-  }
+  IconData getPaperNumberIcon(int value) => Helper.getPaperNumberIcon(value);
 
-  IconData getPaperNumberIcon(PaperNumberType paperNumberType) {
-    IconData icon;
-    switch (paperNumberType) {
-      case PaperNumberType.All:
-        icon = IconData(0xe901, fontFamily: 'icomoon');
-        break;
-      case PaperNumberType.One:
-        icon = IconData(0xe906, fontFamily: 'icomoon');
-        break;
-      case PaperNumberType.Two:
-        icon = IconData(0xe909, fontFamily: 'icomoon');
-        break;
-      case PaperNumberType.Three:
-        icon = IconData(0xe908, fontFamily: 'icomoon');
-        break;
-      case PaperNumberType.Four:
-        icon = IconData(0xe903, fontFamily: 'icomoon');
-        break;
-    }
-    return icon;
-  }
-
-  IconData getSeasonIcon(SeasonType seasonType) {
-    IconData icon;
-    switch (seasonType) {
-      case SeasonType.All:
-        icon = IconData(0xe90b, fontFamily: 'icomoon');
-        break;
-      case SeasonType.Summer:
-        icon = FontAwesomeIcons.solidSun;
-        break;
-      case SeasonType.Winter:
-        icon = IconData(0xe90a, fontFamily: 'icomoon');
-        break;
-      case SeasonType.March:
-        icon = FontAwesomeIcons.cloudSun;
-        break;
-    }
-    return icon;
-  }
+  IconData getSeasonIcon(int value) => Helper.getSeasonIcon(value);
 }

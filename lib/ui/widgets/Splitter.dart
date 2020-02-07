@@ -45,10 +45,11 @@ class _SplitterState extends State<Splitter> {
         return Stack(
           children: <Widget>[
             Positioned(
+              key: UniqueKey(),
               top: 0.0,
               left: 0.0,
               right: 0.0,
-              bottom: 0.0,
+              bottom: bottom,
               child: 
               Offstage(
                 offstage: top.round() == 0,
@@ -57,6 +58,7 @@ class _SplitterState extends State<Splitter> {
               ),
             ),
             Positioned(
+              key: UniqueKey(),
               top: top,
               left: 0.0,
               right: 0.0,
