@@ -3,21 +3,27 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:past_papers/core/Base/locator.dart';
 import 'package:past_papers/core/models/SubjectModel.dart';
 import 'package:past_papers/core/view_models/SubjectsViewModel.dart';
+import 'package:past_papers/ui/ads/FirebaseAdmobManager.dart';
 import 'package:past_papers/ui/widgets/AddSubject.dart';
 import 'package:provider/provider.dart';
 
 class SubjectTile extends StatelessWidget {
+  final FirebaseAdmobManager _admobManager = FirebaseAdmobManager();
   final Subject subject;
   SubjectTile(this.subject);
   @override
   Widget build(BuildContext context) {
+    _admobManager.loadInterstitialAd();
     return Consumer<SubjectsViewModel>(
       builder: (context, model, child) => Padding(
         padding: const EdgeInsets.only(left: 10.0, right: 10.0),
         child: Card(
           elevation: 3.0,
           child: ListTile(
-            onTap: () => model.navigate(subject),
+            onTap: () {
+              _admobManager.showInterstitialAd();
+              model.navigate(subject);
+            },
             title: Hero(
               tag: subject.name,
               child: Material(
@@ -61,9 +67,9 @@ class SubjectTile extends StatelessWidget {
                                             child: Text('Delete Subject')),
                                         Align(
                                           alignment: Alignment.centerRight,
-                                          child: IconButton(padding: EdgeInsets.all(0),
-                                            icon:
-                                                Icon(FontAwesomeIcons.times),
+                                          child: IconButton(
+                                            padding: EdgeInsets.all(0),
+                                            icon: Icon(FontAwesomeIcons.times),
                                             color: Colors.red,
                                             onPressed: () =>
                                                 model.closeDialoag(),

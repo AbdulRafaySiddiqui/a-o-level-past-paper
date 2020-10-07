@@ -5,9 +5,7 @@ import 'package:past_papers/core/Base/BaseView.dart';
 import 'package:past_papers/core/Base/locator.dart';
 import 'package:past_papers/core/models/SubjectModel.dart';
 import 'package:past_papers/core/view_models/PapersViewModel.dart';
-import 'package:past_papers/ui/widgets/AddMcq.dart';
 import 'package:past_papers/ui/widgets/AddPape.dart';
-import 'package:past_papers/ui/widgets/AddSubject.dart';
 import 'package:past_papers/ui/widgets/FilterBar.dart';
 import 'package:past_papers/ui/widgets/PaperListView.dart';
 
